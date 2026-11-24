@@ -6,317 +6,39 @@
   <title>Маркет NFT · Выбор подарка</title>
   <script src="https://telegram.org"></script>
   <style>
-    :root {
-      --bg: #0e0e11;
-      --card: #18181d;
-      --card-active: #202028;
-      --border: rgba(255, 255, 255, 0.08);
-      --accent: #3390ec;
-      --text: #ffffff;
-      --muted: #8e8e93;
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      padding: 14px 14px 135px;
-      overflow-x: hidden;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .header h2 {
-      font-size: 19px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
-    .header-badge {
-      font-size: 11px;
-      font-weight: 600;
-      color: #64b5f6;
-      background: rgba(51, 144, 236, 0.16);
-      padding: 4px 10px;
-      border-radius: 20px;
-      border: 1px solid rgba(51, 144, 236, 0.3);
-    }
-    .search-wrap {
-      position: relative;
-      margin-bottom: 12px;
-    }
-    .search-box {
-      width: 100%;
-      padding: 12px 14px 12px 38px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-      transition: 0.2s;
-    }
-    .search-box:focus {
-      border-color: var(--accent);
-      background: #1e1e26;
-    }
-    .search-icon {
-      position: absolute;
-      left: 13px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--muted);
-      font-size: 14px;
-      pointer-events: none;
-    }
-    .filters {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 10px;
-      margin-bottom: 12px;
-      scrollbar-width: none;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: #0e0e11; color: #ffffff; padding: 14px 14px 135px; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .header h2 { font-size: 19px; font-weight: 700; }
+    .header-badge { font-size: 11px; font-weight: 600; color: #64b5f6; background: rgba(51, 144, 236, 0.16); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(51, 144, 236, 0.3); }
+    .search-box { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: #18181d; color: #fff; font-size: 14px; margin-bottom: 12px; outline: none; }
+    .search-box:focus { border-color: #3390ec; }
+    .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 12px; scrollbar-width: none; }
     .filters::-webkit-scrollbar { display: none; }
-    .chip {
-      padding: 7px 13px;
-      border-radius: 20px;
-      background: var(--card);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 500;
-      white-space: nowrap;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      transition: 0.15s;
-    }
-    .chip.active {
-      border-color: var(--accent);
-      background: rgba(51, 144, 236, 0.22);
-      color: #fff;
-    }
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      box-shadow: 0 0 6px rgba(255,255,255,0.25);
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 11px;
-    }
-    .nft-card {
-      background: var(--card);
-      border-radius: 20px;
-      padding: 8px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-      position: relative;
-    }
-    .nft-card:active {
-      transform: scale(0.97);
-    }
-    .nft-card.selected {
-      border-color: var(--accent);
-      background: var(--card-active);
-      box-shadow: 0 8px 24px rgba(51, 144, 236, 0.25);
-    }
-    .nft-stage {
-      aspect-ratio: 1 / 1;
-      border-radius: 15px;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 8px;
-      box-shadow: inset 0 1px 1px rgba(255,255,255,0.22), inset 0 -14px 28px rgba(0,0,0,0.38);
-    }
-    .nft-pattern {
-      position: absolute;
-      inset: 0;
-      opacity: 0.26;
-      background-size: 68px 68px;
-      pointer-events: none;
-      z-index: 1;
-    }
-    .nft-img {
-      position: relative;
-      z-index: 2;
-      width: 78%;
-      height: 78%;
-      object-fit: contain;
-      filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.48));
-      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .nft-card.selected .nft-img {
-      transform: scale(1.09) rotate(-2deg);
-      animation: floatGift 2.4s ease-in-out infinite;
-    }
-    @keyframes floatGift {
-      0%, 100% { transform: scale(1.09) translateY(0px) rotate(-2deg); }
-      50% { transform: scale(1.12) translateY(-5px) rotate(2deg); }
-    }
-    .rarity-tag {
-      position: absolute;
-      top: 7px;
-      right: 7px;
-      z-index: 3;
-      background: rgba(0, 0, 0, 0.42);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      padding: 3px 7px;
-      border-radius: 8px;
-      font-size: 10px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.92);
-      letter-spacing: 0.2px;
-    }
-    .nft-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 2px;
-      padding: 0 2px;
-    }
-    .nft-meta {
-      font-size: 11.5px;
-      color: var(--muted);
-      padding: 0 2px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .custom-box {
-      margin-top: 16px;
-      background: var(--card);
-      padding: 13px;
-      border-radius: 18px;
-      border: 1px solid var(--border);
-    }
-    .custom-box label {
-      font-size: 12.5px;
-      color: var(--muted);
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
-    .custom-input {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: #121216;
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-    }
-    .custom-input:focus { border-color: var(--accent); }
-    .custom-preview {
-      display: none;
-      align-items: center;
-      gap: 12px;
-      margin-top: 10px;
-      padding: 10px;
-      background: #202029;
-      border-radius: 14px;
-      border: 1px solid var(--accent);
-    }
-    .custom-preview-stage {
-      width: 54px;
-      height: 54px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle, #49b86c, #1e6b38);
-      flex-shrink: 0;
-    }
-    .custom-preview-stage img {
-      width: 44px;
-      height: 44px;
-      object-fit: contain;
-    }
-    .bottom-dock {
-      display: none;
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(20, 20, 26, 0.96);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-top: 1px solid rgba(255,255,255,0.12);
-      padding: 12px 14px 20px;
-      z-index: 99999;
-      box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
-    }
-    .dock-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .dock-thumb {
-      width: 42px;
-      height: 42px;
-      border-radius: 11px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .dock-thumb img {
-      width: 34px;
-      height: 34px;
-      object-fit: contain;
-    }
-    .dock-text {
-      flex: 1;
-      min-width: 0;
-    }
-    .dock-title {
-      font-size: 14px;
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .dock-sub {
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .confirm-btn {
-      width: 100%;
-      background: linear-gradient(135deg, #3390ec, #2575fc);
-      color: #fff;
-      border: none;
-      border-radius: 14px;
-      padding: 15px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 16px rgba(51, 144, 236, 0.4);
-      transition: 0.15s;
-    }
-    .confirm-btn:active {
-      transform: scale(0.98);
-      opacity: 0.9;
-    }
+    .chip { padding: 7px 13px; border-radius: 20px; background: #18181d; color: #fff; font-size: 13px; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: flex; align-items: center; gap: 7px; }
+    .chip.active { border-color: #3390ec; background: rgba(51, 144, 236, 0.25); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px; }
+    .nft-card { background: #18181d; border-radius: 20px; padding: 8px; border: 2px solid transparent; cursor: pointer; transition: 0.15s; }
+    .nft-card.selected { border-color: #3390ec; background: #202028; box-shadow: 0 8px 24px rgba(51, 144, 236, 0.25); }
+    .nft-stage { aspect-ratio: 1 / 1; border-radius: 15px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+    .nft-pattern { position: absolute; inset: 0; opacity: 0.26; background-size: 68px 68px; pointer-events: none; z-index: 1; }
+    .nft-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; border-radius: 15px; transition: transform 0.3s ease; }
+    .nft-card.selected .nft-img { transform: scale(1.06); }
+    .rarity-tag { position: absolute; top: 7px; right: 7px; z-index: 3; background: rgba(0, 0, 0, 0.52); backdrop-filter: blur(6px); padding: 3px 7px; border-radius: 8px; font-size: 10px; font-weight: 700; color: #fff; }
+    .nft-title { font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+    .nft-meta { font-size: 11.5px; color: #8e8e93; display: flex; justify-content: space-between; }
+    .custom-box { margin-top: 16px; background: #18181d; padding: 13px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); }
+    .custom-box label { font-size: 12.5px; color: #8e8e93; display: block; margin-bottom: 8px; }
+    .custom-preview { display: none; align-items: center; gap: 12px; margin-top: 10px; padding: 10px; background: #202029; border-radius: 14px; border: 1px solid #3390ec; }
+    .custom-preview img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; background: #2b7a38; }
+    .bottom-dock { display: none; position: fixed; left: 0; right: 0; bottom: 0; background: rgba(20, 20, 26, 0.97); backdrop-filter: blur(14px); border-top: 1px solid rgba(255,255,255,0.12); padding: 12px 14px 20px; z-index: 99999; }
+    .dock-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .dock-thumb { width: 42px; height: 42px; border-radius: 11px; overflow: hidden; background: #2b7a38; flex-shrink: 0; }
+    .dock-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .dock-title { font-size: 14px; font-weight: 700; }
+    .dock-sub { font-size: 12px; color: #8e8e93; }
+    .confirm-btn { display: block; width: 100%; background: linear-gradient(135deg, #3390ec, #2575fc); color: #fff; border: none; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -325,21 +47,15 @@
     <span class="header-badge">Telegram Gifts</span>
   </div>
 
-  <div class="search-wrap">
-    <span class="search-icon">🔍</span>
-    <input id="search" class="search-box" type="text" placeholder="Поиск: Pepe, Cap, Ring, #2325..." oninput="renderGrid()" />
-  </div>
-
+  <input id="search" class="search-box" type="text" placeholder="Поиск: Pepe, Cap, Ring, #2325..." oninput="renderGrid()" />
   <div class="filters" id="colorFilters"></div>
   <div class="grid" id="nftGrid"></div>
 
   <div class="custom-box">
     <label>Или вставьте ссылку на ваш подарок (t.me/nft/...):</label>
-    <input id="customLink" class="custom-input" type="text" placeholder="https://t.me" oninput="onCustomInput()" />
+    <input id="customLink" class="search-box" style="margin-bottom:0" type="text" placeholder="https://t.me" oninput="onCustomInput()" />
     <div id="customPreview" class="custom-preview">
-      <div class="custom-preview-stage" id="customStage">
-        <img id="customPreviewImg" src="" alt="" />
-      </div>
+      <img id="customPreviewImg" src="" alt="" />
       <div>
         <div id="customPreviewTitle" class="nft-title"></div>
         <div class="nft-meta">Коллекционный подарок Telegram</div>
@@ -349,20 +65,16 @@
 
   <div id="bottomDock" class="bottom-dock">
     <div class="dock-info">
-      <div class="dock-thumb" id="dockThumb">
-        <img id="dockImg" src="" alt="" />
-      </div>
-      <div class="dock-text">
-        <div class="dock-title" id="dockTitle">Plush Pepe #1</div>
-        <div class="dock-sub" id="dockSub">Оригинальный NFT · Готов к сделке</div>
+      <div class="dock-thumb"><img id="dockImg" src="" alt="" /></div>
+      <div>
+        <div class="dock-title" id="dockTitle"></div>
+        <div class="dock-sub" id="dockSub"></div>
       </div>
     </div>
     <button id="confirmBtn" class="confirm-btn" type="button" onclick="confirmSelection()">Подтвердить выбор</button>
   </div>
-
   <script>
-    var urlParams = new URLSearchParams(window.location.search);
-    var BOT_USERNAME = urlParams.get("bot") || "";
+    var BOT_USERNAME = "nfl_trading_bot";
 
     var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
     if (tg) {
@@ -370,20 +82,11 @@
       tg.expand();
     }
 
-    function haptic(type) {
-      try {
-        if (tg && tg.HapticFeedback) {
-          if (type === "select") tg.HapticFeedback.selectionChanged();
-          else tg.HapticFeedback.impactOccurred("medium");
-        }
-      } catch (e) {}
-    }
-
     var PATTERNS = {
       pills: "url(\"data:image/svg+xml,%3Csvg xmlns='http://w3.org' width='68' height='68' viewBox='0 0 68 68'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2.2'%3E%3Crect x='10' y='12' width='18' height='9' rx='4.5' transform='rotate(-35 19 16.5)'/%3E%3Cline x1='16' y1='13' x2='22' y2='20'/%3E%3Crect x='42' y='44' width='18' height='9' rx='4.5' transform='rotate(25 51 48.5)'/%3E%3Cline x1='49' y1='44' x2='53' y2='53'/%3E%3C/g%3E%3C/svg%3E\")",
-      stars: "url(\"data:image/svg+xml,%3Csvg xmlns='http://w3.org' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M16 8l2.2 5.8L24 16l-5.8 2.2L16 24l-2.2-5.8L8 16l5.8-2.2zM48 38l1.8 4.2L54 44l-4.2 1.8L48 50l-1.8-4.2L42 44l4.2-1.8z' fill='%23ffffff'/%3E%3C/svg%3E\")",
-      gems: "url(\"data:image/svg+xml,%3Csvg xmlns='http://w3.org' width='66' height='66' viewBox='0 0 66 66'%3E%3Cpolygon points='18,10 26,18 18,26 10,18' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Cpolygon points='48,40 55,47 48,54 41,47' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3C/svg%3E\")"
+      stars: "url(\"data:image/svg+xml,%3Csvg xmlns='http://w3.org' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M16 8l2.2 5.8L24 16l-5.8 2.2L16 24l-2.2-5.8L8 16l5.8-2.2zM48 38l1.8 4.2L54 44l-4.2 1.8L48 50l-1.8-4.2L42 44l4.2-1.8z' fill='%23ffffff'/%3E%3C/svg%3E\")"
     };
+
     var COLORS = [
       { id: "all", name: "Все", hex: "#8e8e93" },
       { id: "Emerald", name: "Emerald", hex: "#2ea858" },
@@ -395,182 +98,50 @@
     ];
 
     var NFTS = [
-      {
-        slug: "plushpepe-2325",
-        gift: "Plush Pepe",
-        model: "Clown",
-        title: "Plush Pepe #2325",
-        color: "Emerald",
-        rarity: "0.5%",
-        bg: "radial-gradient(circle at 50% 45%, #5dc460 0%, #2b7a38 100%)",
-        pattern: PATTERNS.pills
-      },
-      {
-        slug: "plushpepe-1",
-        gift: "Plush Pepe",
-        model: "Original",
-        title: "Plush Pepe #1",
-        color: "Emerald",
-        rarity: "1.2%",
-        bg: "radial-gradient(circle at 50% 45%, #38b87c 0%, #145c3b 100%)",
-        pattern: PATTERNS.stars
-      },
-      {
-        slug: "durovscap-1",
-        gift: "Durov's Cap",
-        model: "Original",
-        title: "Durov's Cap #1",
-        color: "Onyx Black",
-        rarity: "0.8%",
-        bg: "radial-gradient(circle at 50% 45%, #484856 0%, #18181f 100%)",
-        pattern: PATTERNS.stars
-      },
-      {
-        slug: "signetring-1",
-        gift: "Signet Ring",
-        model: "Original",
-        title: "Signet Ring #1",
-        color: "Pure Gold",
-        rarity: "1.0%",
-        bg: "radial-gradient(circle at 50% 45%, #e6b422 0%, #755204 100%)",
-        pattern: PATTERNS.gems
-      },
-      {
-        slug: "scaredcat-1",
-        gift: "Scared Cat",
-        model: "Original",
-        title: "Scared Cat #1",
-        color: "Mystic Purple",
-        rarity: "1.5%",
-        bg: "radial-gradient(circle at 50% 45%, #904cd6 0%, #3b1661 100%)",
-        pattern: PATTERNS.stars
-      },
-      {
-        slug: "swisswatch-1",
-        gift: "Swiss Watch",
-        model: "Original",
-        title: "Swiss Watch #1",
-        color: "Midnight Blue",
-        rarity: "1.1%",
-        bg: "radial-gradient(circle at 50% 45%, #3772d1 0%, #112954 100%)",
-        pattern: PATTERNS.gems
-      },
-      {
-        slug: "astralshard-1",
-        gift: "Astral Shard",
-        model: "Original",
-        title: "Astral Shard #1",
-        color: "Crimson",
-        rarity: "0.7%",
-        bg: "radial-gradient(circle at 50% 45%, #db3d4b 0%, #631018 100%)",
-        pattern: PATTERNS.gems
-      },
-      {
-        slug: "toybear-1",
-        gift: "Toy Bear",
-        model: "Original",
-        title: "Toy Bear #1",
-        color: "Pure Gold",
-        rarity: "1.8%",
-        bg: "radial-gradient(circle at 50% 45%, #de9e38 0%, #6e460a 100%)",
-        pattern: PATTERNS.pills
-      },
-      {
-        slug: "lootbag-1",
-        gift: "Loot Bag",
-        model: "Original",
-        title: "Loot Bag #1",
-        color: "Onyx Black",
-        rarity: "0.9%",
-        bg: "radial-gradient(circle at 50% 45%, #515161 0%, #1c1c24 100%)",
-        pattern: PATTERNS.gems
-      },
-      {
-        slug: "iongem-1",
-        gift: "Ion Gem",
-        model: "Original",
-        title: "Ion Gem #1",
-        color: "Midnight Blue",
-        rarity: "1.3%",
-        bg: "radial-gradient(circle at 50% 45%, #2ba4db 0%, #0d4563 100%)",
-        pattern: PATTERNS.gems
-      },
-      {
-        slug: "voodoodoll-1",
-        gift: "Voodoo Doll",
-        model: "Original",
-        title: "Voodoo Doll #1",
-        color: "Mystic Purple",
-        rarity: "1.6%",
-        bg: "radial-gradient(circle at 50% 45%, #7e42ba 0%, #311252 100%)",
-        pattern: PATTERNS.pills
-      },
-      {
-        slug: "eternalrose-1",
-        gift: "Eternal Rose",
-        model: "Original",
-        title: "Eternal Rose #1",
-        color: "Crimson",
-        rarity: "1.4%",
-        bg: "radial-gradient(circle at 50% 45%, #cc2f4c 0%, #5c0c1b 100%)",
-        pattern: PATTERNS.stars
-      }
+      { slug: "plushpepe-2325", gift: "Plush Pepe", model: "Clown", title: "Plush Pepe #2325", color: "Emerald", rarity: "0.5%", bg: "radial-gradient(circle, #5dc460, #2b7a38)", pattern: PATTERNS.pills },
+      { slug: "plushpepe-1", gift: "Plush Pepe", model: "Original", title: "Plush Pepe #1", color: "Emerald", rarity: "1.2%", bg: "radial-gradient(circle, #38b87c, #145c3b)", pattern: PATTERNS.stars },
+      { slug: "durovscap-1", gift: "Durov's Cap", model: "Original", title: "Durov's Cap #1", color: "Onyx Black", rarity: "0.8%", bg: "radial-gradient(circle, #484856, #18181f)", pattern: PATTERNS.stars },
+      { slug: "signetring-1", gift: "Signet Ring", model: "Original", title: "Signet Ring #1", color: "Pure Gold", rarity: "1.0%", bg: "radial-gradient(circle, #e6b422, #755204)", pattern: PATTERNS.stars },
+      { slug: "scaredcat-1", gift: "Scared Cat", model: "Original", title: "Scared Cat #1", color: "Mystic Purple", rarity: "1.5%", bg: "radial-gradient(circle, #904cd6, #3b1661)", pattern: PATTERNS.stars },
+      { slug: "swisswatch-1", gift: "Swiss Watch", model: "Original", title: "Swiss Watch #1", color: "Midnight Blue", rarity: "1.1%", bg: "radial-gradient(circle, #3772d1, #112954)", pattern: PATTERNS.stars },
+      { slug: "astralshard-1", gift: "Astral Shard", model: "Original", title: "Astral Shard #1", color: "Crimson", rarity: "0.7%", bg: "radial-gradient(circle, #db3d4b, #631018)", pattern: PATTERNS.stars },
+      { slug: "toybear-1", gift: "Toy Bear", model: "Original", title: "Toy Bear #1", color: "Pure Gold", rarity: "1.8%", bg: "radial-gradient(circle, #de9e38, #6e460a)", pattern: PATTERNS.pills },
+      { slug: "lootbag-1", gift: "Loot Bag", model: "Original", title: "Loot Bag #1", color: "Onyx Black", rarity: "0.9%", bg: "radial-gradient(circle, #515161, #1c1c24)", pattern: PATTERNS.stars },
+      { slug: "iongem-1", gift: "Ion Gem", model: "Original", title: "Ion Gem #1", color: "Midnight Blue", rarity: "1.3%", bg: "radial-gradient(circle, #2ba4db, #0d4563)", pattern: PATTERNS.stars }
     ];
 
     var activeColor = "all";
     var selectedNft = null;
 
-    function getModelPng(gift, model) {
-      return "https://changes.tg" + encodeURIComponent(gift) + "/png/" + encodeURIComponent(model || "Original") + ".png";
+    function getImgUrl(slug) {
+      return "https://fragment.com" + slug.toLowerCase() + ".large.jpg";
     }
 
-    function getFragmentProxy(slug) {
-      return "https://wsrv.nl" + slug.toLowerCase() + ".large.jpg&w=400&output=webp";
-    }
-
-    window.handleImgFail = function(img, gift, slug) {
+    window.onImgErr = function(img, slug) {
       var step = img.getAttribute("data-step") || "0";
-      if (step === "0" && gift) {
+      if (step === "0") {
         img.setAttribute("data-step", "1");
-        img.src = getModelPng(gift, "Original");
-      } else if (step === "1" && slug) {
+        img.src = "https://fragment.com" + slug.toLowerCase() + ".medium.jpg";
+      } else if (step === "1") {
         img.setAttribute("data-step", "2");
-        img.style.width = "100%";
-        img.style.height = "100%";
-        img.style.objectFit = "cover";
-        img.src = getFragmentProxy(slug);
+        img.src = "https://fragment.com" + slug.toLowerCase() + ".webp";
       } else {
-        img.onerror = null;
+        img.style.display = "none";
       }
     };
     function parseCustomLink(raw) {
       var val = raw.trim();
       if (!val) return null;
-      var match = val.match(/t\.me\/nft\/([a-zA-Z0-9_-]+)/i);
-      if (match) {
-        var slug = match.slice(1).join("").toLowerCase();
+      var m = val.match(/t\.me\/nft\/([a-zA-Z0-9_-]+)/i);
+      if (m) {
+        var slug = m.at(1).toLowerCase();
         var parts = slug.split("-");
         var num = parts.length > 1 ? parts.pop() : "";
-        var name = parts.join(" ").replace(/([a-z])([A-Z])/g, "$1 $2");
+        var name = parts.join(" ");
         name = name.charAt(0).toUpperCase() + name.slice(1);
-        var title = num ? (name + " #" + num) : name;
-        return {
-          title: title,
-          slug: slug,
-          gift: name,
-          model: "Original",
-          bg: "radial-gradient(circle at 50% 45%, #3b7dd8, #14366e)",
-          imgUrl: getFragmentProxy(slug)
-        };
+        return { title: num ? (name + " #" + num) : name, slug: slug, model: "Original" };
       }
-      return {
-        title: val,
-        slug: "",
-        gift: "",
-        model: "",
-        bg: "radial-gradient(circle at 50% 45%, #3b7dd8, #14366e)",
-        imgUrl: ""
-      };
+      return { title: val, slug: "", model: "" };
     }
 
     function renderFilters() {
@@ -580,12 +151,7 @@
         var el = document.createElement("div");
         el.className = "chip" + (activeColor === c.id ? " active" : "");
         el.innerHTML = '<span class="dot" style="background:' + c.hex + '"></span>' + c.name;
-        el.onclick = function() {
-          haptic("select");
-          activeColor = c.id;
-          renderFilters();
-          renderGrid();
-        };
+        el.onclick = function() { activeColor = c.id; renderFilters(); renderGrid(); };
         box.appendChild(el);
       });
     }
@@ -597,24 +163,21 @@
 
       NFTS.forEach(function(item) {
         if (activeColor !== "all" && item.color !== activeColor) return;
-        if (q && item.title.toLowerCase().indexOf(q) === -1 && item.model.toLowerCase().indexOf(q) === -1 && item.color.toLowerCase().indexOf(q) === -1) return;
+        if (q && item.title.toLowerCase().indexOf(q) === -1 && item.color.toLowerCase().indexOf(q) === -1) return;
 
         var isSel = selectedNft && selectedNft.slug === item.slug;
         var card = document.createElement("div");
         card.className = "nft-card" + (isSel ? " selected" : "");
-        var imgUrl = getModelPng(item.gift, item.model);
-
         card.innerHTML =
           '<div class="nft-stage" style="background:' + item.bg + '">' +
             '<div class="nft-pattern" style="background-image:' + item.pattern + '"></div>' +
             '<span class="rarity-tag">' + item.rarity + '</span>' +
-            '<img class="nft-img" src="' + imgUrl + '" alt="' + item.title + '" data-step="0" onerror="handleImgFail(this, \'' + item.gift.replace(/'/g, "\\'") + '\', \'' + item.slug + '\')" />' +
+            '<img class="nft-img" src="' + getImgUrl(item.slug) + '" data-step="0" onerror="onImgErr(this, \'' + item.slug + '\')" />' +
           '</div>' +
           '<div class="nft-title">' + item.title + '</div>' +
           '<div class="nft-meta"><span>' + item.model + '</span><span>' + item.color + '</span></div>';
 
         card.onclick = function() {
-          haptic("select");
           selectedNft = item;
           document.getElementById("customLink").value = "";
           document.getElementById("customPreview").style.display = "none";
@@ -633,10 +196,10 @@
         renderGrid();
         document.getElementById("customPreviewTitle").textContent = parsed.title;
         var img = document.getElementById("customPreviewImg");
-        if (parsed.imgUrl) {
-          img.setAttribute("data-step", "1");
-          img.onerror = function() { handleImgFail(img, parsed.gift, parsed.slug); };
-          img.src = parsed.imgUrl;
+        if (parsed.slug) {
+          img.setAttribute("data-step", "0");
+          img.onerror = function() { onImgErr(img, parsed.slug); };
+          img.src = getImgUrl(parsed.slug);
           img.style.display = "block";
         } else {
           img.style.display = "none";
@@ -650,26 +213,18 @@
 
     function updateDock() {
       var custom = parseCustomLink(document.getElementById("customLink").value);
-      var dock = document.getElementById("bottomDock");
-      var btn = document.getElementById("confirmBtn");
-      var thumb = document.getElementById("dockThumb");
-      var img = document.getElementById("dockImg");
-
       var active = custom ? custom : selectedNft;
-      if (!active) {
-        dock.style.display = "none";
-        return;
-      }
+      var dock = document.getElementById("bottomDock");
+      if (!active) { dock.style.display = "none"; return; }
 
       dock.style.display = "block";
       document.getElementById("dockTitle").textContent = active.title;
-      document.getElementById("dockSub").textContent = active.model ? ("Модель: " + active.model + " · Готов к сделке") : "Пользовательский лот";
-      btn.textContent = "Выбрать: " + active.title;
+      document.getElementById("dockSub").textContent = "Нажмите для перехода к выбору валюты";
+      document.getElementById("confirmBtn").textContent = "Выбрать: " + active.title;
 
-      thumb.style.background = active.bg || "radial-gradient(circle, #3b7dd8, #14366e)";
-      var src = active.imgUrl ? active.imgUrl : getModelPng(active.gift, active.model);
-      if (src) {
-        img.src = src;
+      var img = document.getElementById("dockImg");
+      if (active.slug) {
+        img.src = getImgUrl(active.slug);
         img.style.display = "block";
       } else {
         img.style.display = "none";
@@ -681,73 +236,32 @@
       var chosen = custom ? custom : selectedNft;
       if (!chosen) return;
 
-      haptic("impact");
-      var btn = document.getElementById("confirmBtn");
-      btn.textContent = "Передаём в бота...";
-      btn.disabled = true;
-
-      var payload = JSON.stringify({
-        title: chosen.title,
-        slug: chosen.slug || "",
-        model: chosen.model || ""
-      });
-
       var slugForUrl = chosen.slug || chosen.title.replace(/[^a-zA-Z0-9_-]/g, "_");
-      var deepLinkHttps = BOT_USERNAME ? ("https://t.me" + BOT_USERNAME + "?start=nft_" + encodeURIComponent(slugForUrl)) : "";
-      var deepLinkTg = BOT_USERNAME ? ("tg://resolve?domain=" + BOT_USERNAME + "&start=nft_" + encodeURIComponent(slugForUrl)) : "";
+      var deepLink = "https://t.me" + BOT_USERNAME + "?start=nft_" + encodeURIComponent(slugForUrl);
+      var payload = JSON.stringify({ title: chosen.title, slug: chosen.slug || "" });
 
-      // СПОСОБ 1: штатный sendData (мгновенно закрывает WebApp и шлёт данные в бот)
       if (tg && typeof tg.sendData === "function") {
-        try {
-          tg.sendData(payload);
-        } catch (e) {}
+        try { tg.sendData(payload); } catch (e) {}
       }
 
-      // СПОСОБ 2: нативный переход внутри клиента Telegram (через 200 мс)
-      if (deepLinkHttps) {
-        setTimeout(function() {
-          if (tg && typeof tg.openTelegramLink === "function") {
-            try {
-              tg.openTelegramLink(deepLinkHttps);
-            } catch (e) {}
-          }
-        }, 200);
-
-        // СПОСОБ 3: системный openLink + принудительное закрытие окна (через 550 мс)
-        setTimeout(function() {
-          if (tg && typeof tg.openLink === "function") {
-            try {
-              tg.openLink(deepLinkHttps);
-            } catch (e) {}
-          }
-          if (tg && typeof tg.close === "function") {
-            try { tg.close(); } catch (e) {}
-          }
-        }, 550);
-
-        // СПОСОБ 4: прямой пробой iframe через window.top.location (через 900 мс)
-        setTimeout(function() {
-          try {
-            window.top.location.href = deepLinkHttps;
-          } catch (e) {
-            window.location.href = deepLinkHttps;
-          }
-        }, 900);
-      }
-
-      // СПОСОБ 5: аварийная прямая ссылка tg:// + автокопирование команды в буфер (через 1200 мс)
       setTimeout(function() {
-        var cmdText = "/start nft_" + slugForUrl;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          try { navigator.clipboard.writeText(cmdText); } catch (e) {}
+        if (tg && typeof tg.openTelegramLink === "function") {
+          try { tg.openTelegramLink(deepLink); } catch (e) {}
         }
-        var dock = document.getElementById("bottomDock");
-        var hrefVal = deepLinkTg || "#";
-        dock.innerHTML =
-          '<a href="' + hrefVal + '" style="display:block;width:100%;background:#2ea858;color:#fff;text-align:center;text-decoration:none;border-radius:14px;padding:15px;font-size:16px;font-weight:700;">' +
-          'Перейти в бота (' + chosen.title + ')</a>' +
-          '<div style="text-align:center;font-size:11px;color:#8e8e93;margin-top:6px;">Команда скопирована — если не открылось, просто вставьте в чат</div>';
-      }, 1200);
+      }, 150);
+
+      setTimeout(function() {
+        if (tg && typeof tg.close === "function") {
+          try { tg.close(); } catch (e) {}
+        } else {
+          window.top.location.href = deepLink;
+        }
+      }, 450);
+
+      var dock = document.getElementById("bottomDock");
+      dock.innerHTML =
+        '<a href="' + deepLink + '" class="confirm-btn" style="background:#2ea858;">' +
+        'Открыть бота (' + chosen.title + ')</a>';
     }
 
     renderFilters();
