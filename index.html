@@ -7,12 +7,13 @@
   <script src="https://telegram.org"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: #0f0f12; color: #ffffff; padding: 14px; padding-bottom: 110px; }
+    body { background: #0f0f12; color: #ffffff; padding: 14px; padding-bottom: 115px; }
     h2 { font-size: 18px; margin-bottom: 12px; font-weight: 700; }
     .search-box {
       width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12);
       background: #1a1a20; color: #ffffff; font-size: 14px; margin-bottom: 12px; outline: none;
     }
+    .search-box:focus { border-color: #3390ec; }
     .colors { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 12px; scrollbar-width: none; }
     .colors::-webkit-scrollbar { display: none; }
     .chip {
@@ -25,37 +26,39 @@
     .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .nft-card {
       background: #1a1a20; border-radius: 18px; padding: 9px; border: 2px solid transparent;
-      cursor: pointer; transition: 0.15s;
+      cursor: pointer; transition: 0.15s; -webkit-tap-highlight-color: transparent;
     }
     .nft-card.selected { border-color: #3390ec; background: #22222c; }
     .nft-preview {
-      height: 140px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
-      margin-bottom: 8px; position: relative; overflow: hidden;
-      box-shadow: inset 0 1px 1px rgba(255,255,255,0.25), inset 0 -12px 24px rgba(0,0,0,0.45);
-    }
-    .nft-preview svg {
-      width: 86px; height: 86px; filter: drop-shadow(0 10px 14px rgba(0,0,0,0.5));
+      aspect-ratio: 1 / 1; border-radius: 13px; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 8px; position: relative; overflow: hidden; background: #25252e;
     }
     .nft-preview img {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 13px; z-index: 1;
     }
     .nft-badge {
-      position: absolute; top: 7px; right: 7px; z-index: 2; background: rgba(0, 0, 0, 0.55);
-      padding: 3px 8px; border-radius: 8px; font-size: 11px; color: #fff;
+      position: absolute; top: 7px; right: 7px; z-index: 2; background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px); padding: 3px 8px; border-radius: 8px; font-size: 11px; color: #fff; font-weight: 600;
     }
-    .nft-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+    .nft-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .nft-sub { font-size: 12px; color: #8e8e93; }
     .custom-box { margin-top: 16px; background: #1a1a20; padding: 12px; border-radius: 16px; }
     .custom-box label { font-size: 13px; color: #8e8e93; display: block; margin-bottom: 8px; }
+    .custom-preview {
+      display: none; align-items: center; gap: 12px; margin-top: 10px;
+      padding: 10px; background: #22222c; border-radius: 12px; border: 1px solid #3390ec;
+    }
+    .custom-preview img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: #141418; }
     .confirm-bar {
       display: none; position: fixed; left: 0; right: 0; bottom: 0;
-      padding: 12px 14px 18px; background: rgba(15, 15, 18, 0.96);
-      border-top: 1px solid rgba(255,255,255,0.1); z-index: 9999;
+      padding: 12px 14px 20px; background: rgba(15, 15, 18, 0.97);
+      border-top: 1px solid rgba(255,255,255,0.12); z-index: 9999;
     }
     .confirm-btn {
       display: block; width: 100%; background: #3390ec; color: #ffffff; border: none;
       text-align: center; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 600; cursor: pointer;
     }
+    .confirm-btn:active { opacity: 0.85; }
   </style>
 </head>
 <body>
@@ -67,151 +70,210 @@
   <div class="custom-box">
     <label>Или вставьте ссылку на ваш NFT (t.me/nft/...):</label>
     <input id="customLink" class="search-box" style="margin-bottom:0" type="text" placeholder="https://t.me" />
+    <div id="customPreview" class="custom-preview">
+      <img id="customPreviewImg" src="" alt="" />
+      <div>
+        <div id="customPreviewTitle" class="nft-name"></div>
+        <div class="nft-sub">Оригинальный NFT Telegram</div>
+      </div>
+    </div>
   </div>
 
   <div id="confirmBar" class="confirm-bar">
-    <button id="confirmBtn" class="confirm-btn" type="button" onclick="sendToBot()">Подтвердить выбор</button>
+    <button id="confirmBtn" class="confirm-btn" type="button">Подтвердить выбор</button>
   </div>
   <script>
+    var urlParams = new URLSearchParams(window.location.search);
+    var BOT_USERNAME = urlParams.get("bot") || "";
+
     var COLORS = [
       { id: "all", name: "Все цвета", hex: "#888888" },
+      { id: "Emerald", name: "Emerald", hex: "#1b6b4a" },
       { id: "Onyx Black", name: "Onyx Black", hex: "#2c2c2e" },
       { id: "Midnight Blue", name: "Midnight Blue", hex: "#1b3b6f" },
       { id: "Mystic Purple", name: "Mystic Purple", hex: "#6f35a3" },
-      { id: "Emerald", name: "Emerald", hex: "#1b6b4a" },
       { id: "Pure Gold", name: "Pure Gold", hex: "#c99716" },
       { id: "Crimson", name: "Crimson", hex: "#a8272e" }
     ];
 
-    var SVG_3D = {
-      pepe: '<svg viewBox="0 0 100 100"><defs><radialGradient id="g1" cx="35%" cy="30%"><stop offset="0%" stop-color="#8ef56e"/><stop offset="100%" stop-color="#1e7d22"/></radialGradient></defs><circle cx="33" cy="28" r="14" fill="url(#g1)"/><circle cx="67" cy="28" r="14" fill="url(#g1)"/><circle cx="33" cy="28" r="7" fill="#fff"/><circle cx="67" cy="28" r="7" fill="#fff"/><circle cx="35" cy="28" r="3.5" fill="#111"/><circle cx="65" cy="28" r="3.5" fill="#111"/><ellipse cx="50" cy="58" rx="36" ry="26" fill="url(#g1)"/><path d="M26 62 Q50 76 74 62" stroke="#134e16" stroke-width="4" fill="none" stroke-linecap="round"/></svg>',
-      cap: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4da3ff"/><stop offset="100%" stop-color="#14489c"/></linearGradient></defs><path d="M22 56 C22 30, 78 30, 78 56 Z" fill="url(#g2)"/><ellipse cx="54" cy="60" rx="38" ry="12" fill="#1c5ec7"/><circle cx="50" cy="31" r="4" fill="#82beff"/></svg>',
-      ring: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffe680"/><stop offset="100%" stop-color="#b8860b"/></linearGradient></defs><circle cx="50" cy="60" r="24" stroke="url(#g3)" stroke-width="10" fill="none"/><polygon points="50,14 64,28 50,40 36,28" fill="#5ce1e6"/></svg>',
-      cat: '<svg viewBox="0 0 100 100"><defs><radialGradient id="g4" cx="35%" cy="30%"><stop offset="0%" stop-color="#ffbe55"/><stop offset="100%" stop-color="#c96a08"/></radialGradient></defs><polygon points="22,42 28,16 46,34" fill="url(#g4)"/><polygon points="78,42 72,16 54,34" fill="url(#g4)"/><circle cx="50" cy="56" r="30" fill="url(#g4)"/><circle cx="39" cy="52" r="5" fill="#111"/><circle cx="61" cy="52" r="5" fill="#111"/><polygon points="46,62 54,62 50,67" fill="#ff6b81"/></svg>',
-      watch: '<svg viewBox="0 0 100 100"><rect x="38" y="10" width="24" height="80" rx="6" fill="#2c3e50"/><circle cx="50" cy="50" r="26" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="5"/><line x1="50" y1="50" x2="50" y2="34" stroke="#222" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="50" x2="62" y2="50" stroke="#e74c3c" stroke-width="2.5" stroke-linecap="round"/></svg>',
-      shard: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff7eb3"/><stop offset="100%" stop-color="#8e2de2"/></linearGradient></defs><polygon points="50,12 78,44 50,88 22,44" fill="url(#g6)"/><polygon points="50,12 64,44 50,88 36,44" fill="rgba(255,255,255,0.25)"/></svg>'
-    };
-
     var NFTS = [
-      { id: "PlushPepe-1", slug: "plushpepe-1", title: "Plush Pepe #1", color: "Emerald", bg: "linear-gradient(135deg,#0f422c,#268c60)", icon: SVG_3D.pepe },
-      { id: "DurovsCap-1", slug: "durovscap-1", title: "Durov's Cap #1", color: "Onyx Black", bg: "linear-gradient(135deg,#18181d,#3a3a45)", icon: SVG_3D.cap },
-      { id: "SignetRing-1", slug: "signetring-1", title: "Signet Ring #1", color: "Pure Gold", bg: "linear-gradient(135deg,#6e4e04,#c99716)", icon: SVG_3D.ring },
-      { id: "ScaredCat-1", slug: "scaredcat-1", title: "Scared Cat #1", color: "Mystic Purple", bg: "linear-gradient(135deg,#381654,#7338a6)", icon: SVG_3D.cat },
-      { id: "SwissWatch-1", slug: "swisswatch-1", title: "Swiss Watch #1", color: "Midnight Blue", bg: "linear-gradient(135deg,#0e2040,#26539c)", icon: SVG_3D.watch },
-      { id: "AstralShard-1", slug: "astralshard-1", title: "Astral Shard #1", color: "Crimson", bg: "linear-gradient(135deg,#540f13,#a8272e)", icon: SVG_3D.shard }
+      { slug: "plushpepe-1", title: "Plush Pepe #1", color: "Emerald" },
+      { slug: "plushpepe-2325", title: "Plush Pepe #2325", color: "Midnight Blue" },
+      { slug: "durovscap-1", title: "Durov's Cap #1", color: "Onyx Black" },
+      { slug: "signetring-1", title: "Signet Ring #1", color: "Pure Gold" },
+      { slug: "scaredcat-1", title: "Scared Cat #1", color: "Mystic Purple" },
+      { slug: "swisswatch-1", title: "Swiss Watch #1", color: "Midnight Blue" },
+      { slug: "astralshard-1", title: "Astral Shard #1", color: "Crimson" },
+      { slug: "toybear-1", title: "Toy Bear #1", color: "Pure Gold" },
+      { slug: "lootbag-1", title: "Loot Bag #1", color: "Onyx Black" },
+      { slug: "iongem-1", title: "Ion Gem #1", color: "Midnight Blue" },
+      { slug: "voodoodoll-1", title: "Voodoo Doll #1", color: "Mystic Purple" },
+      { slug: "eternalrose-1", title: "Eternal Rose #1", color: "Crimson" }
     ];
 
     var activeColor = "all";
     var selectedNft = null;
-    var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 
     if (tg) {
       tg.ready();
       tg.expand();
     }
 
-    function updateButton() {
-      var customVal = document.getElementById("customLink").value.trim();
+    window.handleImgError = function(img, slug) {
+      var step = parseInt(img.getAttribute("data-step") || "0", 10);
+      if (step === 0) {
+        img.setAttribute("data-step", "1");
+        img.src = "https://fragment.com" + slug + ".medium.jpg";
+      } else if (step === 1) {
+        img.setAttribute("data-step", "2");
+        img.src = "https://fragment.com" + slug + ".webp";
+      } else {
+        img.onerror = null;
+      }
+    };
+
+    function getImgUrl(slug) {
+      return "https://fragment.com" + slug.toLowerCase() + ".large.jpg";
+    }
+
+    function parseCustomInput(raw) {
+      var val = raw.trim();
+      if (!val) return null;
+      var match = val.match(/t\.me\/nft\/([a-zA-Z0-9_-]+)/i);
+      if (match && match[1]) {
+        var slug = match[1].toLowerCase();
+        var parts = slug.split("-");
+        var num = parts.length > 1 ? parts.pop() : "";
+        var name = parts.join(" ").replace(/([a-z])([A-Z])/g, "$1 $2");
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        var title = num ? (name + " #" + num) : name;
+        return { title: title, slug: slug };
+      }
+      return { title: val, slug: "" };
+    }
+    function renderColors() {
+      var container = document.getElementById("colorFilters");
+      container.innerHTML = "";
+      COLORS.forEach(function(c) {
+        var chip = document.createElement("div");
+        chip.className = "chip" + (activeColor === c.id ? " active" : "");
+        chip.innerHTML = '<span class="dot" style="background:' + c.hex + '"></span>' + c.name;
+        chip.onclick = function() {
+          activeColor = c.id;
+          renderColors();
+          renderGrid();
+        };
+        container.appendChild(chip);
+      });
+    }
+
+    function renderGrid() {
+      var query = document.getElementById("search").value.toLowerCase().trim();
+      var grid = document.getElementById("nftGrid");
+      grid.innerHTML = "";
+
+      NFTS.forEach(function(item) {
+        if (activeColor !== "all" && item.color !== activeColor) return;
+        if (query && item.title.toLowerCase().indexOf(query) === -1 && item.color.toLowerCase().indexOf(query) === -1) return;
+
+        var isSelected = selectedNft && selectedNft.slug === item.slug;
+        var card = document.createElement("div");
+        card.className = "nft-card" + (isSelected ? " selected" : "");
+        card.innerHTML =
+          '<div class="nft-preview">' +
+            '<span class="nft-badge">NFT</span>' +
+            '<img src="' + getImgUrl(item.slug) + '" alt="' + item.title + '" data-step="0" onerror="handleImgError(this, \'' + item.slug + '\')" />' +
+          '</div>' +
+          '<div class="nft-name">' + item.title + '</div>' +
+          '<div class="nft-sub">' + item.color + '</div>';
+
+        card.onclick = function() {
+          selectedNft = item;
+          document.getElementById("customLink").value = "";
+          document.getElementById("customPreview").style.display = "none";
+          renderGrid();
+          updateConfirmBar();
+        };
+        grid.appendChild(card);
+      });
+    }
+
+    function updateConfirmBar() {
+      var customParsed = parseCustomInput(document.getElementById("customLink").value);
       var bar = document.getElementById("confirmBar");
       var btn = document.getElementById("confirmBtn");
 
-      var rawSlug = "";
-      var label = "";
-
-      if (selectedNft) {
-        rawSlug = selectedNft.id;
-        label = "Выбрать: " + selectedNft.title + " →";
-      } else if (customVal.length >= 3) {
-        var m = customVal.match(/([A-Za-z0-9_]+-\d+)/);
-        rawSlug = m ? m : customVal;
-        label = "Выбрать: " + rawSlug + " →";
-      }
-
-      if (rawSlug) {
-        btn.textContent = label;
+      if (customParsed) {
         bar.style.display = "block";
+        btn.textContent = "Подтвердить: " + customParsed.title;
+      } else if (selectedNft) {
+        bar.style.display = "block";
+        btn.textContent = "Подтвердить: " + selectedNft.title;
       } else {
         bar.style.display = "none";
       }
     }
 
-    window.sendToBot = function() {
-      var customVal = document.getElementById("customLink").value.trim();
-      var rawSlug = "";
-      var fullTitle = "";
+    document.getElementById("search").addEventListener("input", renderGrid);
 
-      if (selectedNft) {
-        rawSlug = selectedNft.id;
-        fullTitle = selectedNft.title + " (" + selectedNft.color + ")";
-      } else if (customVal.length >= 3) {
-        var m = customVal.match(/([A-Za-z0-9_]+-\d+)/);
-        rawSlug = m ? m : customVal;
-        fullTitle = rawSlug;
+    document.getElementById("customLink").addEventListener("input", function() {
+      var parsed = parseCustomInput(this.value);
+      var previewBox = document.getElementById("customPreview");
+      if (parsed) {
+        selectedNft = null;
+        renderGrid();
+        document.getElementById("customPreviewTitle").textContent = parsed.title;
+        var img = document.getElementById("customPreviewImg");
+        if (parsed.slug) {
+          img.setAttribute("data-step", "0");
+          img.onerror = function() { handleImgError(img, parsed.slug); };
+          img.src = getImgUrl(parsed.slug);
+          img.style.display = "block";
+        } else {
+          img.style.display = "none";
+        }
+        previewBox.style.display = "flex";
+      } else {
+        previewBox.style.display = "none";
       }
-      if (!rawSlug) return;
+      updateConfirmBar();
+    });
+
+    function submitChoice() {
+      var customParsed = parseCustomInput(document.getElementById("customLink").value);
+      var chosen = customParsed ? customParsed : selectedNft;
+      if (!chosen) return;
+
+      var payload = JSON.stringify({
+        title: chosen.title,
+        slug: chosen.slug || ""
+      });
+
+      var slugForUrl = chosen.slug || chosen.title.replace(/[^a-zA-Z0-9_-]/g, "_");
+      var fallbackUrl = BOT_USERNAME
+        ? ("https://t.me" + BOT_USERNAME + "?start=nft_" + encodeURIComponent(slugForUrl))
+        : "";
 
       if (tg && typeof tg.sendData === "function") {
-        tg.sendData(JSON.stringify({ title: fullTitle, slug: rawSlug }));
+        try {
+          tg.sendData(payload);
+        } catch (e) {}
       }
-    };
 
-    function renderColors() {
-      var html = "";
-      for (var i = 0; i < COLORS.length; i++) {
-        var c = COLORS[i];
-        var cls = activeColor === c.id ? "chip active" : "chip";
-        html += '<div class="' + cls + '" onclick="setColor(\'' + c.id + '\')"><span class="dot" style="background:' + c.hex + '"></span>' + c.name + '</div>';
+      if (fallbackUrl) {
+        setTimeout(function() {
+          if (tg && typeof tg.openTelegramLink === "function") {
+            tg.openTelegramLink(fallbackUrl);
+            tg.close();
+          } else {
+            window.location.href = fallbackUrl;
+          }
+        }, 350);
       }
-      document.getElementById("colorFilters").innerHTML = html;
     }
 
-    function renderGrid() {
-      var q = document.getElementById("search").value.toLowerCase();
-      var html = "";
-      for (var i = 0; i < NFTS.length; i++) {
-        var item = NFTS[i];
-        var matchColor = activeColor === "all" || item.color === activeColor;
-        var matchText = item.title.toLowerCase().indexOf(q) !== -1 || item.id.toLowerCase().indexOf(q) !== -1;
-        if (!matchColor || !matchText) continue;
-
-        var cls = (selectedNft && selectedNft.id === item.id) ? "nft-card selected" : "nft-card";
-        html += '<div class="' + cls + '" onclick="pickNft(\'' + item.id + '\')">' +
-          '<div class="nft-preview" style="background:' + item.bg + '">' +
-          '<span class="nft-badge">' + item.color + '</span>' +
-          item.icon +
-          '<img referrerpolicy="no-referrer" src="https://fragment.com' + item.slug + '.medium.jpg" onerror="this.style.display=\'none\'" alt="" />' +
-          '</div>' +
-          '<div class="nft-name">' + item.title + '</div>' +
-          '<div class="nft-sub">Telegram 3D Gift</div>' +
-          '</div>';
-      }
-      document.getElementById("nftGrid").innerHTML = html;
-    }
-
-    window.setColor = function(id) {
-      activeColor = id;
-      renderColors();
-      renderGrid();
-    };
-
-    window.pickNft = function(id) {
-      for (var i = 0; i < NFTS.length; i++) {
-        if (NFTS[i].id === id) {
-          selectedNft = NFTS[i];
-          break;
-        }
-      }
-      document.getElementById("customLink").value = "";
-      renderGrid();
-      updateButton();
-    };
-
-    document.getElementById("search").addEventListener("input", renderGrid);
-    document.getElementById("customLink").addEventListener("input", function() {
-      selectedNft = null;
-      renderGrid();
-      updateButton();
-    });
+    document.getElementById("confirmBtn").addEventListener("click", submitChoice);
 
     renderColors();
     renderGrid();
