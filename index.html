@@ -32,7 +32,7 @@
     .nft-card.selected { border-color: #3390ec; background: #22222b; }
     .nft-preview {
       height: 145px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
-      margin-bottom: 8px; position: relative; overflow: hidden; background: #16161c;
+      margin-bottom: 8px; position: relative; overflow: hidden; background: #18181f;
     }
     .nft-preview img {
       width: 100%; height: 100%; object-fit: cover; border-radius: 13px; display: block;
@@ -93,9 +93,9 @@
       { id: "Crimson", name: "Crimson", hex: "#a8272e" }
     ];
 
-    function gift3dUrl(slug) {
-      const target = "https://fragment.com" + slug.toLowerCase() + ".large.jpg";
-      return "https://wsrv.nl" + encodeURIComponent(target) + "&w=400&output=webp";
+    function gift3dUrl(slug, ext) {
+      const target = "https://fragment.com" + slug.toLowerCase() + "." + (ext || "webp");
+      return "https://wsrv.nl" + encodeURIComponent(target) + "&w=400";
     }
 
     const NFTS = [
@@ -150,7 +150,8 @@
       document.getElementById("nftGrid").innerHTML = filtered.map(item =>
         '<div class="nft-card ' + (selectedNft && selectedNft.id === item.id ? 'selected' : '') + '" onclick="pickNft(\'' + item.id + '\')">' +
         '<div class="nft-preview"><span class="nft-badge">' + item.color + '</span>' +
-        '<img src="' + gift3dUrl(item.slug) + '" alt="' + item.title + '" /></div>' +
+        '<img src="' + gift3dUrl(item.slug, "webp") + '" ' +
+        'onerror="if(!this.dataset.t){this.dataset.t=1;this.src=\'' + gift3dUrl(item.slug, "medium.jpg") + '\';}" alt="' + item.title + '" /></div>' +
         '<div class="nft-name">' + item.title + '</div><div class="nft-sub">Telegram 3D Gift</div></div>'
       ).join("");
     }
@@ -169,15 +170,18 @@
       const rawSlug = selectedNft ? selectedNft.id : (customSlug || customVal);
       if (!rawSlug) return;
 
+      const title = selectedNft ? (selectedNft.title + " (" + selectedNft.color + ")") : rawSlug;
       const cleanSlug = rawSlug.replace(/[^A-Za-z0-9_-]/g, "");
-      const botUrl = "https://t.me_" + cleanSlug;
 
-      if (tg && typeof tg.openTelegramLink === "function") {
-        tg.openTelegramLink(botUrl);
-        tg.close();
-      } else {
-        window.location.href = botUrl;
+      if (tg && typeof tg.sendData === "function") {
+        try {
+          tg.sendData(JSON.stringify({ title: title, slug: cleanSlug }));
+        } catch (e) {}
       }
+
+      setTimeout(function() {
+        window.top.location.href = "https://t.me_" + cleanSlug;
+      }, 250);
     };
 
     document.getElementById("search").addEventListener("input", renderGrid);
@@ -193,7 +197,12 @@
       if (match && match[1]) {
         const slug = match[1];
         customSlug = slug;
-        document.getElementById("liveImg").src = gift3dUrl(slug);
+        const img = document.getElementById("liveImg");
+        img.dataset.t = "";
+        img.src = gift3dUrl(slug, "webp");
+        img.onerror = function() {
+          if (!this.dataset.t) { this.dataset.t = 1; this.src = gift3dUrl(slug, "medium.jpg"); }
+        };
         document.getElementById("liveTitle").textContent = slug.replace("-", " #");
         previewBox.style.display = "flex";
       } else {
