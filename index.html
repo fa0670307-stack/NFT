@@ -7,7 +7,7 @@
   <script src="https://telegram.org"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: #0f0f12; color: #ffffff; padding: 14px; padding-bottom: 95px; }
+    body { background: #0f0f12; color: #ffffff; padding: 14px; padding-bottom: 100px; }
     h2 { font-size: 18px; margin-bottom: 12px; font-weight: 700; }
     .search-box {
       width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
@@ -32,13 +32,14 @@
     .nft-card.selected { border-color: #3390ec; background: #22222b; }
     .nft-preview {
       height: 135px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
-      margin-bottom: 8px; position: relative; overflow: hidden; background: #141418;
+      margin-bottom: 8px; position: relative; overflow: hidden; font-size: 54px;
     }
     .nft-preview img {
-      width: 100%; height: 100%; object-fit: cover; border-radius: 13px; display: block;
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; border-radius: 13px; display: block;
     }
     .nft-badge {
-      position: absolute; top: 7px; right: 7px; background: rgba(0, 0, 0, 0.55);
+      position: absolute; top: 7px; right: 7px; z-index: 2; background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(6px); padding: 3px 8px; border-radius: 8px; font-size: 11px; color: #fff; font-weight: 500;
     }
     .nft-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
@@ -47,14 +48,23 @@
     .custom-box label { font-size: 13px; color: #8e8e93; display: block; margin-bottom: 8px; }
     .live-preview {
       display: none; margin-top: 10px; align-items: center; gap: 12px;
-      background: #131317; padding: 8px; border-radius: 12px; border: 1px solid rgba(51,144,236,0.4);
+      background: #131317; padding: 10px; border-radius: 12px; border: 1px solid rgba(51,144,236,0.4);
     }
-    .live-preview img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
-    .fallback-btn {
-      display: none; position: fixed; left: 14px; right: 14px; bottom: 14px;
-      background: #3390ec; color: #fff; border: none; border-radius: 14px;
-      padding: 15px; font-size: 16px; font-weight: 600; cursor: pointer; z-index: 99;
+    .live-thumb {
+      width: 52px; height: 52px; border-radius: 10px; background: linear-gradient(135deg,#1d3557,#457b9d);
+      display: flex; align-items: center; justify-content: center; font-size: 26px; overflow: hidden; position: relative;
     }
+    .live-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .confirm-bar {
+      display: none; position: fixed; left: 0; right: 0; bottom: 0;
+      padding: 12px 14px 18px; background: rgba(15, 15, 18, 0.92);
+      backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.08); z-index: 999;
+    }
+    .confirm-btn {
+      width: 100%; background: #3390ec; color: #fff; border: none; border-radius: 14px;
+      padding: 15px; font-size: 16px; font-weight: 600; cursor: pointer;
+    }
+    .confirm-btn:active { opacity: 0.85; }
   </style>
 </head>
 <body>
@@ -67,7 +77,7 @@
     <label>Или вставьте ссылку на ваш NFT (t.me/nft/...):</label>
     <input id="customLink" class="search-box" style="margin-bottom:0" type="text" placeholder="https://t.me" />
     <div id="livePreview" class="live-preview">
-      <img id="liveImg" src="" alt="NFT" />
+      <div class="live-thumb">🎁<img id="liveImg" referrerpolicy="no-referrer" src="" alt="" onerror="this.style.display='none'" /></div>
       <div>
         <div id="liveTitle" style="font-weight:600;font-size:14px;"></div>
         <div style="font-size:12px;color:#3390ec;">Оригинальный NFT Telegram</div>
@@ -75,7 +85,9 @@
     </div>
   </div>
 
-  <button id="fallbackBtn" class="fallback-btn" onclick="sendChoice()">Подтвердить выбор</button>
+  <div id="confirmBar" class="confirm-bar">
+    <button id="confirmBtn" class="confirm-btn" onclick="sendChoice()">Подтвердить выбор</button>
+  </div>
   <script>
     const COLORS = [
       { id: "all", name: "Все цвета", hex: "#888888" },
@@ -88,54 +100,14 @@
     ];
 
     const NFTS = [
-      {
-        id: "PlushPepe-1",
-        title: "Plush Pepe #1",
-        color: "Emerald",
-        img: "https://fragment.com"
-      },
-      {
-        id: "DurovsCap-1",
-        title: "Durov's Cap #1",
-        color: "Onyx Black",
-        img: "https://fragment.com"
-      },
-      {
-        id: "SignetRing-1",
-        title: "Signet Ring #1",
-        color: "Pure Gold",
-        img: "https://fragment.com"
-      },
-      {
-        id: "ScaredCat-1",
-        title: "Scared Cat #1",
-        color: "Mystic Purple",
-        img: "https://fragment.com"
-      },
-      {
-        id: "SwissWatch-1",
-        title: "Swiss Watch #1",
-        color: "Midnight Blue",
-        img: "https://fragment.com"
-      },
-      {
-        id: "AstralShard-1",
-        title: "Astral Shard #1",
-        color: "Crimson",
-        img: "https://fragment.com"
-      },
-      {
-        id: "PerfumeBottle-1",
-        title: "Perfume Bottle #1",
-        color: "Mystic Purple",
-        img: "https://fragment.com"
-      },
-      {
-        id: "VintageCigar-1",
-        title: "Vintage Cigar #1",
-        color: "Pure Gold",
-        img: "https://fragment.com"
-      }
+      { id: "PlushPepe-1", slug: "plushpepe-1", title: "Plush Pepe #1", color: "Emerald", bg: "linear-gradient(135deg,#134e35,#268c60)", emoji: "🐸" },
+      { id: "DurovsCap-1", slug: "durovscap-1", title: "Durov's Cap #1", color: "Onyx Black", bg: "linear-gradient(135deg,#1c1c21,#3a3a42)", emoji: "🧢" },
+      { id: "SignetRing-1", slug: "signetring-1", title: "Signet Ring #1", color: "Pure Gold", bg: "linear-gradient(135deg,#785605,#c99716)", emoji: "💍" },
+      { id: "ScaredCat-1", slug: "scaredcat-1", title: "Scared Cat #1", color: "Mystic Purple", bg: "linear-gradient(135deg,#3d1a5c,#7338a6)", emoji: "🐱" },
+      { id: "SwissWatch-1", slug: "swisswatch-1", title: "Swiss Watch #1", color: "Midnight Blue", bg: "linear-gradient(135deg,#102547,#26539c)", emoji: "⌚" },
+      { id: "AstralShard-1", slug: "astralshard-1", title: "Astral Shard #1", color: "Crimson", bg: "linear-gradient(135deg,#5e1216,#a8272e)", emoji: "💎" },
+      { id: "PerfumeBottle-1", slug: "perfumebottle-1", title: "Perfume Bottle #1", color: "Mystic Purple", bg: "linear-gradient(135deg,#4a1c6b,#8a3cc2)", emoji: "🧴" },
+      { id: "VintageCigar-1", slug: "vintagecigar-1", title: "Vintage Cigar #1", color: "Pure Gold", bg: "linear-gradient(135deg,#6b4212,#b57824)", emoji: "🚬" }
     ];
 
     let activeColor = "all";
@@ -148,22 +120,25 @@
       tg.expand();
     }
 
-    function updateMainButton() {
+    function updateActionButtons() {
       const customVal = document.getElementById("customLink").value.trim();
-      const hasChoice = customVal.length >= 4 || selectedNft;
-      const label = selectedNft ? "Выбрать: " + selectedNft.title : "Подтвердить NFT";
+      const hasChoice = customVal.length >= 4 || Boolean(selectedNft);
+      const label = selectedNft ? "Выбрать: " + selectedNft.title + " →" : "Подтвердить NFT →";
+
+      const bar = document.getElementById("confirmBar");
+      const btn = document.getElementById("confirmBtn");
+      bar.style.display = hasChoice ? "block" : "none";
+      btn.textContent = label;
 
       if (tg && tg.MainButton) {
         if (hasChoice) {
           tg.MainButton.setText(label);
+          tg.MainButton.enable();
           tg.MainButton.show();
         } else {
           tg.MainButton.hide();
         }
       }
-      const fb = document.getElementById("fallbackBtn");
-      fb.style.display = (!tg || !tg.initData) && hasChoice ? "block" : "none";
-      fb.textContent = label;
     }
 
     function renderColors() {
@@ -183,7 +158,12 @@
 
       document.getElementById("nftGrid").innerHTML = filtered.map(item =>
         '<div class="nft-card ' + (selectedNft && selectedNft.id === item.id ? 'selected' : '') + '" onclick="pickNft(\'' + item.id + '\')">' +
-        '<div class="nft-preview"><span class="nft-badge">' + item.color + '</span><img src="' + item.img + '" alt="' + item.title + '" /></div>' +
+        '<div class="nft-preview" style="background:' + item.bg + '">' +
+        '<span class="nft-badge">' + item.color + '</span>' +
+        '<span>' + item.emoji + '</span>' +
+        '<img referrerpolicy="no-referrer" src="https://fragment.com' + item.slug + '.webp" ' +
+        'onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=\'https://fragment.com' + item.slug + '.medium.jpg\';}else{this.style.display=\'none\';}" alt="" />' +
+        '</div>' +
         '<div class="nft-name">' + item.title + '</div><div class="nft-sub">Telegram Gift</div></div>'
       ).join("");
     }
@@ -194,7 +174,7 @@
       document.getElementById("customLink").value = "";
       document.getElementById("livePreview").style.display = "none";
       renderGrid();
-      updateMainButton();
+      updateActionButtons();
     };
 
     window.sendChoice = function() {
@@ -202,10 +182,11 @@
       const payload = selectedNft
         ? { title: selectedNft.title + " (" + selectedNft.color + ")", slug: selectedNft.id }
         : { title: customSlug || customVal, slug: customSlug || customVal };
-      if (tg) {
+
+      if (tg && typeof tg.sendData === "function") {
         tg.sendData(JSON.stringify(payload));
       } else {
-        alert("Выбрано: " + payload.title);
+        alert("Откройте витрину через кнопку внутри бота! Выбрано: " + payload.title);
       }
     };
 
@@ -219,16 +200,18 @@
       const match = val.match(/t\.me\/nft\/([A-Za-z0-9_]+-\d+)/i) || val.match(/^([A-Za-z0-9_]+-\d+)$/);
       const previewBox = document.getElementById("livePreview");
 
-      if (match) {
-        const slug = match;
+      if (match && match[1]) {
+        const slug = match[1];
         customSlug = slug;
-        document.getElementById("liveImg").src = "https://fragment.com" + slug.toLowerCase() + ".medium.jpg";
+        const img = document.getElementById("liveImg");
+        img.style.display = "block";
+        img.src = "https://fragment.com" + slug.toLowerCase() + ".webp";
         document.getElementById("liveTitle").textContent = slug.replace("-", " #");
         previewBox.style.display = "flex";
       } else {
         previewBox.style.display = "none";
       }
-      updateMainButton();
+      updateActionButtons();
     });
 
     if (tg && tg.MainButton) {
