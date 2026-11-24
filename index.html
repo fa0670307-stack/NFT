@@ -27,16 +27,14 @@
       background: #1a1a20; border-radius: 18px; padding: 9px; border: 2px solid transparent;
       cursor: pointer; transition: 0.15s;
     }
-    .nft-card.selected { border-color: #3390ec; background: #22222b; }
+    .nft-card.selected { border-color: #3390ec; background: #22222c; }
     .nft-preview {
       height: 140px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
-      margin-bottom: 8px; position: relative; overflow: hidden; font-size: 56px;
-      box-shadow: inset 0 0 24px rgba(0,0,0,0.35);
+      margin-bottom: 8px; position: relative; overflow: hidden;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.25), inset 0 -12px 24px rgba(0,0,0,0.45);
     }
-    .nft-preview::after {
-      content: ""; position: absolute; inset: 0;
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.22), transparent 60%);
-      pointer-events: none;
+    .nft-preview svg {
+      width: 86px; height: 86px; filter: drop-shadow(0 10px 14px rgba(0,0,0,0.5));
     }
     .nft-preview img {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 13px; z-index: 1;
@@ -72,7 +70,7 @@
   </div>
 
   <div id="confirmBar" class="confirm-bar">
-    <button id="confirmBtn" class="confirm-btn" type="button" onclick="confirmSelection()">Подтвердить выбор</button>
+    <button id="confirmBtn" class="confirm-btn" type="button" onclick="sendToBot()">Подтвердить выбор</button>
   </div>
   <script>
     var COLORS = [
@@ -85,23 +83,31 @@
       { id: "Crimson", name: "Crimson", hex: "#a8272e" }
     ];
 
+    var SVG_3D = {
+      pepe: '<svg viewBox="0 0 100 100"><defs><radialGradient id="g1" cx="35%" cy="30%"><stop offset="0%" stop-color="#8ef56e"/><stop offset="100%" stop-color="#1e7d22"/></radialGradient></defs><circle cx="33" cy="28" r="14" fill="url(#g1)"/><circle cx="67" cy="28" r="14" fill="url(#g1)"/><circle cx="33" cy="28" r="7" fill="#fff"/><circle cx="67" cy="28" r="7" fill="#fff"/><circle cx="35" cy="28" r="3.5" fill="#111"/><circle cx="65" cy="28" r="3.5" fill="#111"/><ellipse cx="50" cy="58" rx="36" ry="26" fill="url(#g1)"/><path d="M26 62 Q50 76 74 62" stroke="#134e16" stroke-width="4" fill="none" stroke-linecap="round"/></svg>',
+      cap: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4da3ff"/><stop offset="100%" stop-color="#14489c"/></linearGradient></defs><path d="M22 56 C22 30, 78 30, 78 56 Z" fill="url(#g2)"/><ellipse cx="54" cy="60" rx="38" ry="12" fill="#1c5ec7"/><circle cx="50" cy="31" r="4" fill="#82beff"/></svg>',
+      ring: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffe680"/><stop offset="100%" stop-color="#b8860b"/></linearGradient></defs><circle cx="50" cy="60" r="24" stroke="url(#g3)" stroke-width="10" fill="none"/><polygon points="50,14 64,28 50,40 36,28" fill="#5ce1e6"/></svg>',
+      cat: '<svg viewBox="0 0 100 100"><defs><radialGradient id="g4" cx="35%" cy="30%"><stop offset="0%" stop-color="#ffbe55"/><stop offset="100%" stop-color="#c96a08"/></radialGradient></defs><polygon points="22,42 28,16 46,34" fill="url(#g4)"/><polygon points="78,42 72,16 54,34" fill="url(#g4)"/><circle cx="50" cy="56" r="30" fill="url(#g4)"/><circle cx="39" cy="52" r="5" fill="#111"/><circle cx="61" cy="52" r="5" fill="#111"/><polygon points="46,62 54,62 50,67" fill="#ff6b81"/></svg>',
+      watch: '<svg viewBox="0 0 100 100"><rect x="38" y="10" width="24" height="80" rx="6" fill="#2c3e50"/><circle cx="50" cy="50" r="26" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="5"/><line x1="50" y1="50" x2="50" y2="34" stroke="#222" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="50" x2="62" y2="50" stroke="#e74c3c" stroke-width="2.5" stroke-linecap="round"/></svg>',
+      shard: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff7eb3"/><stop offset="100%" stop-color="#8e2de2"/></linearGradient></defs><polygon points="50,12 78,44 50,88 22,44" fill="url(#g6)"/><polygon points="50,12 64,44 50,88 36,44" fill="rgba(255,255,255,0.25)"/></svg>'
+    };
+
     var NFTS = [
-      { id: "PlushPepe-1", slug: "plushpepe-1", title: "Plush Pepe #1", color: "Emerald", bg: "linear-gradient(135deg,#0f422c,#268c60)", emoji: "🐸" },
-      { id: "DurovsCap-1", slug: "durovscap-1", title: "Durov's Cap #1", color: "Onyx Black", bg: "linear-gradient(135deg,#18181d,#3a3a45)", emoji: "🧢" },
-      { id: "SignetRing-1", slug: "signetring-1", title: "Signet Ring #1", color: "Pure Gold", bg: "linear-gradient(135deg,#6e4e04,#c99716)", emoji: "💍" },
-      { id: "ScaredCat-1", slug: "scaredcat-1", title: "Scared Cat #1", color: "Mystic Purple", bg: "linear-gradient(135deg,#381654,#7338a6)", emoji: "🐱" },
-      { id: "SwissWatch-1", slug: "swisswatch-1", title: "Swiss Watch #1", color: "Midnight Blue", bg: "linear-gradient(135deg,#0e2040,#26539c)", emoji: "⌚" },
-      { id: "AstralShard-1", slug: "astralshard-1", title: "Astral Shard #1", color: "Crimson", bg: "linear-gradient(135deg,#540f13,#a8272e)", emoji: "💎" },
-      { id: "PerfumeBottle-1", slug: "perfumebottle-1", title: "Perfume Bottle #1", color: "Mystic Purple", bg: "linear-gradient(135deg,#421861,#8a3cc2)", emoji: "🧴" },
-      { id: "VintageCigar-1", slug: "vintagecigar-1", title: "Vintage Cigar #1", color: "Pure Gold", bg: "linear-gradient(135deg,#5c380e,#b57824)", emoji: "🚬" }
+      { id: "PlushPepe-1", slug: "plushpepe-1", title: "Plush Pepe #1", color: "Emerald", bg: "linear-gradient(135deg,#0f422c,#268c60)", icon: SVG_3D.pepe },
+      { id: "DurovsCap-1", slug: "durovscap-1", title: "Durov's Cap #1", color: "Onyx Black", bg: "linear-gradient(135deg,#18181d,#3a3a45)", icon: SVG_3D.cap },
+      { id: "SignetRing-1", slug: "signetring-1", title: "Signet Ring #1", color: "Pure Gold", bg: "linear-gradient(135deg,#6e4e04,#c99716)", icon: SVG_3D.ring },
+      { id: "ScaredCat-1", slug: "scaredcat-1", title: "Scared Cat #1", color: "Mystic Purple", bg: "linear-gradient(135deg,#381654,#7338a6)", icon: SVG_3D.cat },
+      { id: "SwissWatch-1", slug: "swisswatch-1", title: "Swiss Watch #1", color: "Midnight Blue", bg: "linear-gradient(135deg,#0e2040,#26539c)", icon: SVG_3D.watch },
+      { id: "AstralShard-1", slug: "astralshard-1", title: "Astral Shard #1", color: "Crimson", bg: "linear-gradient(135deg,#540f13,#a8272e)", icon: SVG_3D.shard }
     ];
 
     var activeColor = "all";
     var selectedNft = null;
+    var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-    if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
+    if (tg) {
+      tg.ready();
+      tg.expand();
     }
 
     function updateButton() {
@@ -129,7 +135,7 @@
       }
     }
 
-    window.confirmSelection = function() {
+    window.sendToBot = function() {
       var customVal = document.getElementById("customLink").value.trim();
       var rawSlug = "";
       var fullTitle = "";
@@ -144,20 +150,9 @@
       }
       if (!rawSlug) return;
 
-      var clean = rawSlug.replace(/[^A-Za-z0-9_-]/g, "");
-      var tgLink = "https://t.me_" + clean;
-      var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-
-      if (tg) {
-        try {
-          tg.sendData(JSON.stringify({ title: fullTitle, slug: clean }));
-        } catch (e) {}
-        if (typeof tg.openTelegramLink === "function") {
-          tg.openTelegramLink(tgLink);
-          return;
-        }
+      if (tg && typeof tg.sendData === "function") {
+        tg.sendData(JSON.stringify({ title: fullTitle, slug: rawSlug }));
       }
-      window.location.href = tgLink;
     };
 
     function renderColors() {
@@ -183,11 +178,11 @@
         html += '<div class="' + cls + '" onclick="pickNft(\'' + item.id + '\')">' +
           '<div class="nft-preview" style="background:' + item.bg + '">' +
           '<span class="nft-badge">' + item.color + '</span>' +
-          '<span>' + item.emoji + '</span>' +
+          item.icon +
           '<img referrerpolicy="no-referrer" src="https://fragment.com' + item.slug + '.medium.jpg" onerror="this.style.display=\'none\'" alt="" />' +
           '</div>' +
           '<div class="nft-name">' + item.title + '</div>' +
-          '<div class="nft-sub">Telegram Gift</div>' +
+          '<div class="nft-sub">Telegram 3D Gift</div>' +
           '</div>';
       }
       document.getElementById("nftGrid").innerHTML = html;
